@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Nop.Core;
 using Nop.Core.Domain.Common;
 using Nop.Core.Domain.Customers;
 using Nop.Services.Directory;
@@ -26,6 +27,7 @@ public partial class AddressValidator : BaseNopValidator<AddressModel>
             .WithMessageAwait(localizationService.GetResourceAsync("Address.Fields.Email.Required"));
         RuleFor(x => x.Email)
             .EmailAddress()
+            .Matches(CommonHelper.GetEmailRegex())
             .WithMessageAwait(localizationService.GetResourceAsync("Common.WrongEmail"));
         if (addressSettings.CountryEnabled)
         {

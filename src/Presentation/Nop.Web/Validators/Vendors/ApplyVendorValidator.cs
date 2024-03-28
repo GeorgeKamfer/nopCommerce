@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Nop.Core;
 using Nop.Services.Localization;
 using Nop.Web.Framework.Validators;
 using Nop.Web.Models.Vendors;
@@ -12,6 +13,9 @@ public partial class ApplyVendorValidator : BaseNopValidator<ApplyVendorModel>
         RuleFor(x => x.Name).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync("Vendors.ApplyAccount.Name.Required"));
 
         RuleFor(x => x.Email).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync("Vendors.ApplyAccount.Email.Required"));
-        RuleFor(x => x.Email).EmailAddress().WithMessageAwait(localizationService.GetResourceAsync("Common.WrongEmail"));
+        RuleFor(x => x.Email)
+            .EmailAddress()
+            .Matches(CommonHelper.GetEmailRegex())
+            .WithMessageAwait(localizationService.GetResourceAsync("Common.WrongEmail"));
     }
 }

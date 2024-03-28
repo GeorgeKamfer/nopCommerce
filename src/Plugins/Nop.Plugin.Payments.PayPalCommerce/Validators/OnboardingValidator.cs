@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Nop.Core;
 using Nop.Plugin.Payments.PayPalCommerce.Models;
 using Nop.Services.Localization;
 using Nop.Web.Framework.Validators;
@@ -17,6 +18,7 @@ public class OnboardingValidator : BaseNopValidator<OnboardingModel>
         RuleFor(model => model.Email)
             .NotEmpty()
             .EmailAddress()
+            .Matches(CommonHelper.GetEmailRegex())
             .WithMessageAwait(localizationService.GetResourceAsync("Admin.Common.WrongEmail"));
     }
 

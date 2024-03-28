@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Nop.Core;
 using Nop.Core.Domain.Customers;
 using Nop.Services.Localization;
 using Nop.Web.Framework.Validators;
@@ -14,7 +15,10 @@ public partial class LoginValidator : BaseNopValidator<LoginModel>
         {
             //login by email
             RuleFor(x => x.Email).NotEmpty().WithMessageAwait(localizationService.GetResourceAsync("Account.Login.Fields.Email.Required"));
-            RuleFor(x => x.Email).EmailAddress().WithMessageAwait(localizationService.GetResourceAsync("Common.WrongEmail"));
+            RuleFor(x => x.Email)
+                .EmailAddress()
+                .Matches(CommonHelper.GetEmailRegex())
+                .WithMessageAwait(localizationService.GetResourceAsync("Common.WrongEmail"));
         }
     }
 }

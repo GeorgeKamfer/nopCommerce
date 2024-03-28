@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Nop.Core;
 using Nop.Services.Localization;
 using Nop.Web.Areas.Admin.Models.Messages;
 using Nop.Web.Framework.Validators;
@@ -10,6 +11,9 @@ public partial class TestMessageTemplateValidator : BaseNopValidator<TestMessage
     public TestMessageTemplateValidator(ILocalizationService localizationService)
     {
         RuleFor(x => x.SendTo).NotEmpty();
-        RuleFor(x => x.SendTo).EmailAddress().WithMessageAwait(localizationService.GetResourceAsync("Admin.Common.WrongEmail"));
+        RuleFor(x => x.SendTo)
+            .EmailAddress()
+            .Matches(CommonHelper.GetEmailRegex())
+            .WithMessageAwait(localizationService.GetResourceAsync("Admin.Common.WrongEmail"));
     }
 }

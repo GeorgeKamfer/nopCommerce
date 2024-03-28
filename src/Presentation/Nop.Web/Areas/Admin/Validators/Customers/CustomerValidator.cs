@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Nop.Core;
 using Nop.Core.Domain.Customers;
 using Nop.Services.Customers;
 using Nop.Services.Directory;
@@ -19,6 +20,7 @@ public partial class CustomerValidator : BaseNopValidator<CustomerModel>
         RuleFor(x => x.Email)
             .NotEmpty()
             .EmailAddress()
+            .Matches(CommonHelper.GetEmailRegex())
             //.WithMessage("Valid Email is required for customer to be in 'Registered' role")
             .WithMessageAwait(localizationService.GetResourceAsync("Admin.Common.WrongEmail"))
             //only for registered users

@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using Nop.Core;
 using Nop.Core.Domain.Common;
 using Nop.Services.Localization;
 using Nop.Web.Areas.Admin.Models.Common;
@@ -24,6 +25,7 @@ public partial class AddressValidator : BaseNopValidator<AddressModel>
             .When(x => x.EmailRequired);
         RuleFor(x => x.Email)
             .EmailAddress()
+            .Matches(CommonHelper.GetEmailRegex())
             .WithMessageAwait(localizationService.GetResourceAsync("Admin.Common.WrongEmail"))
             .When(x => x.EmailRequired);
         RuleFor(x => x.Company)
