@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Nop.Services.Localization;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -117,7 +117,8 @@ public partial class InvoiceDocument : PdfDocument<InvoiceSource>
                     ));
             });
 
-            var logoContainer = row.ConstantItem(65).Height(65);
+            // Enlarge the logo area so store logos appear more prominently on the invoice PDF.
+            var logoContainer = row.ConstantItem(110).Height(110);
 
             if (Source.LogoData is not null && Source.LogoData.Length != 0)
                 logoContainer.Image(Source.LogoData, ImageScaling.FitArea);
