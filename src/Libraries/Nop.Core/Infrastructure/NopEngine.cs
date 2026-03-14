@@ -1,9 +1,10 @@
-﻿using System.Reflection;
+using System.Reflection;
 using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nop.Core.Infrastructure.Mapper;
 
 namespace Nop.Core.Infrastructure;
@@ -67,12 +68,12 @@ public partial class NopEngine : IEngine
             .Where(mapperConfiguration => mapperConfiguration != null)
             .OrderBy(mapperConfiguration => mapperConfiguration.Order);
 
-        //create AutoMapper configuration
+        //create AutoMapper configuration (AutoMapper 15+ requires ILoggerFactory)
         var config = new MapperConfiguration(cfg =>
         {
             foreach (var instance in instances) 
                 cfg.AddProfile(instance.GetType());
-        });
+        }, NullLoggerFactory.Instance);
 
         //register
         AutoMapperConfiguration.Init(config);
