@@ -1,4 +1,8 @@
-﻿function createEstimateShippingPopUp(settings) {
+function createEstimateShippingPopUp(settings) {
+  function shippingPriceIsPresent(price) {
+    return price !== undefined && price !== null && price !== '';
+  }
+
   var defaultSettings = {
     opener: false,
     form: false,
@@ -30,7 +34,7 @@
 
       $('.apply-shipping-button', $content).on('click', function () {
         var option = self.getActiveShippingOption();
-        if (option && option.provider && option.price) {
+        if (option && option.provider && shippingPriceIsPresent(option.price)) {
           self.selectShippingOption(option);
           self.closePopup();
         }

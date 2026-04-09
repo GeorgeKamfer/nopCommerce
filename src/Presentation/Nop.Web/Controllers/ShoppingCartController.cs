@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Nop.Core;
 using Nop.Core.Caching;
@@ -437,6 +437,9 @@ public partial class ShoppingCartController : BasePublicController
         if (string.IsNullOrEmpty(model.ZipPostalCode) && !_shippingSettings.EstimateShippingCityNameEnabled)
             errors.Add(await _localizationService.GetResourceAsync("Shipping.EstimateShipping.ZipPostalCode.Required"));
 
+        if (_shippingSettings.EstimateShippingCityNameEnabled && string.IsNullOrEmpty(model.City))
+            errors.Add(await _localizationService.GetResourceAsync("Shipping.EstimateShipping.City.Required"));
+
         if (model.CountryId == null || model.CountryId == 0)
             errors.Add(await _localizationService.GetResourceAsync("Shipping.EstimateShipping.Country.Required"));
 
@@ -446,6 +449,9 @@ public partial class ShoppingCartController : BasePublicController
                 success = false,
                 errors = errors
             });
+
+        if (!string.IsNullOrWhiteSpace(name))
+            name = name.Trim();
 
         var customer = await _workContext.GetCurrentCustomerAsync();
         var store = await _storeContext.GetCurrentStoreAsync();
@@ -470,6 +476,7 @@ public partial class ShoppingCartController : BasePublicController
                     CountryId = model.CountryId,
                     StateProvinceId = model.StateProvinceId,
                     ZipPostalCode = model.ZipPostalCode,
+                    City = model.City,
                 };
 
                 //not found? let's load them using shipping service
@@ -484,7 +491,9 @@ public partial class ShoppingCartController : BasePublicController
             }
         }
 
-        selectedShippingOption = shippingOptions.Find(so => !string.IsNullOrEmpty(so.Name) && so.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+        selectedShippingOption = shippingOptions.Find(so =>
+            !string.IsNullOrEmpty(so.Name) &&
+            so.Name.Trim().Equals(name, StringComparison.InvariantCultureIgnoreCase));
         if (selectedShippingOption == null)
             errors.Add(await _localizationService.GetResourceAsync("Shipping.EstimateShippingPopUp.ShippingOption.IsNotFound"));
 

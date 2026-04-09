@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Nop.Core;
 using Nop.Core.Domain.Common;
@@ -7,6 +7,7 @@ using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
 using Nop.Core.Domain.Security;
 using Nop.Core.Domain.Shipping;
+using Nop.Core.Domain.Stores;
 using Nop.Core.Domain.Tax;
 using Nop.Core.Http.Extensions;
 using Nop.Services.Attributes;
@@ -630,9 +631,7 @@ public partial class CheckoutController : BasePublicController
         {
             customer.ShippingAddressId = customer.BillingAddressId;
             await _customerService.UpdateCustomerAsync(customer);
-            //reset selected shipping method (in case if "pick up in store" was selected)
-            await _genericAttributeService.SaveAttributeAsync<ShippingOption>(customer, NopCustomerDefaults.SelectedShippingOptionAttribute, null, store.Id);
-            await _genericAttributeService.SaveAttributeAsync<PickupPoint>(customer, NopCustomerDefaults.SelectedPickupPointAttribute, null, store.Id);
+            await ClearPickupSelectionForPhysicalShipmentAsync(customer, store);
             //limitation - "Ship to the same address" doesn't properly work in "pick up in store only" case (when no shipping plugins are available) 
             return RedirectToRoute("CheckoutShippingMethod");
         }
@@ -716,9 +715,7 @@ public partial class CheckoutController : BasePublicController
                 customer.ShippingAddressId = customer.BillingAddressId;
                 await _customerService.UpdateCustomerAsync(customer);
 
-                //reset selected shipping method (in case if "pick up in store" was selected)
-                await _genericAttributeService.SaveAttributeAsync<ShippingOption>(customer, NopCustomerDefaults.SelectedShippingOptionAttribute, null, store.Id);
-                await _genericAttributeService.SaveAttributeAsync<PickupPoint>(customer, NopCustomerDefaults.SelectedPickupPointAttribute, null, store.Id);
+                await ClearPickupSelectionForPhysicalShipmentAsync(customer, store);
 
                 //limitation - "Ship to the same address" doesn't properly work in "pick up in store only" case (when no shipping plugins are available) 
                 return RedirectToRoute("CheckoutShippingMethod");
@@ -1340,6 +1337,21 @@ public partial class CheckoutController : BasePublicController
 
     #region Methods (one page checkout)
 
+    /// <summary>
+    /// When the customer ships to a physical address, clear pickup point. Clear the saved shipping option only if it was pick-up-in-store,
+    /// so a method chosen on the cart (estimate + apply) is not wiped when using ship-to-same-address.
+    /// </summary>
+    protected virtual async Task ClearPickupSelectionForPhysicalShipmentAsync(Customer customer, Store store)
+    {
+        await _genericAttributeService.SaveAttributeAsync<PickupPoint>(customer, NopCustomerDefaults.SelectedPickupPointAttribute, null, store.Id);
+
+        var selectedShipping = await _genericAttributeService.GetAttributeAsync<ShippingOption>(customer,
+            NopCustomerDefaults.SelectedShippingOptionAttribute, store.Id);
+
+        if (selectedShipping?.IsPickupInStore == true)
+            await _genericAttributeService.SaveAttributeAsync<ShippingOption>(customer, NopCustomerDefaults.SelectedShippingOptionAttribute, null, store.Id);
+    }
+
     protected virtual async Task<JsonResult> OpcLoadStepAfterShippingAddress(IList<ShoppingCartItem> cart)
     {
         var customer = await _workContext.GetCurrentCustomerAsync();
@@ -1614,9 +1626,7 @@ public partial class CheckoutController : BasePublicController
                     //ship to the same address
                     customer.ShippingAddressId = address.Id;
                     await _customerService.UpdateCustomerAsync(customer);
-                    //reset selected shipping method (in case if "pick up in store" was selected)
-                    await _genericAttributeService.SaveAttributeAsync<ShippingOption>(customer, NopCustomerDefaults.SelectedShippingOptionAttribute, null, store.Id);
-                    await _genericAttributeService.SaveAttributeAsync<PickupPoint>(customer, NopCustomerDefaults.SelectedPickupPointAttribute, null, store.Id);
+                    await ClearPickupSelectionForPhysicalShipmentAsync(customer, store);
                     //limitation - "Ship to the same address" doesn't properly work in "pick up in store only" case (when no shipping plugins are available) 
                     return await OpcLoadStepAfterShippingAddress(cart);
                 }

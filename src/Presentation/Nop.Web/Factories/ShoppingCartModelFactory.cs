@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Nop.Core;
 using Nop.Core.Caching;
@@ -1338,7 +1338,8 @@ public partial class ShoppingCartModelFactory : IShoppingCartModelFactory
                             Description = shippingOption.Description,
                             Rate = shippingOption.Rate,
                             TransitDays = shippingOption.TransitDays,
-                            ShippingRateComputationMethodSystemName = shippingOption.ShippingRateComputationMethodSystemName
+                            ShippingRateComputationMethodSystemName = shippingOption.ShippingRateComputationMethodSystemName,
+                            DisplayOrder = shippingOption.DisplayOrder
                         });
                     }
                 }
@@ -1414,12 +1415,18 @@ public partial class ShoppingCartModelFactory : IShoppingCartModelFactory
                         deliveryDateFormat = customerDateTime.AddDays(option.TransitDays.Value).ToString("d", currentCulture);
                     }
 
-                    var selected = selectedShippingOption != null &&
-                                   !string.IsNullOrEmpty(option.ShippingRateComputationMethodSystemName) &&
-                                   option.ShippingRateComputationMethodSystemName.Equals(selectedShippingOption.ShippingRateComputationMethodSystemName, StringComparison.InvariantCultureIgnoreCase) &&
-                                   (!string.IsNullOrEmpty(option.Name) &&
-                                    option.Name.Equals(selectedShippingOption.Name, StringComparison.InvariantCultureIgnoreCase) ||
-                                    (option.IsPickupInStore && option.IsPickupInStore == selectedShippingOption.IsPickupInStore));
+                    var selected = false;
+                    if (selectedShippingOption != null)
+                    {
+                        var nameMatches = !string.IsNullOrEmpty(option.Name) && !string.IsNullOrEmpty(selectedShippingOption.Name) &&
+                            string.Equals(option.Name.Trim(), selectedShippingOption.Name.Trim(), StringComparison.InvariantCultureIgnoreCase);
+                        var sysMatches = !string.IsNullOrEmpty(option.ShippingRateComputationMethodSystemName) &&
+                            !string.IsNullOrEmpty(selectedShippingOption.ShippingRateComputationMethodSystemName) &&
+                            option.ShippingRateComputationMethodSystemName.Equals(selectedShippingOption.ShippingRateComputationMethodSystemName, StringComparison.InvariantCultureIgnoreCase);
+                        var pickupMatches = option.IsPickupInStore && selectedShippingOption.IsPickupInStore;
+
+                        selected = sysMatches && (nameMatches || pickupMatches);
+                    }
 
                     model.ShippingOptions.Add(new EstimateShippingResultModel.ShippingOptionModel
                     {

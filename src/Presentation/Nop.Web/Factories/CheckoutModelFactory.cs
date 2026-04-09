@@ -1,4 +1,4 @@
-﻿using Nop.Core;
+using Nop.Core;
 using Nop.Core.Domain.Common;
 using Nop.Core.Domain.Customers;
 using Nop.Core.Domain.Orders;
@@ -423,26 +423,70 @@ public partial class CheckoutModelFactory : ICheckoutModelFactory
                     _ => model.ShippingMethods.OrderBy(option => option.DisplayOrder)
                 }).ToList();
 
-            //find a selected (previously) shipping method
+            //find a selected (previously) shipping method (cart estimate / prior step)
             var selectedShippingOption = await _genericAttributeService.GetAttributeAsync<ShippingOption>(customer,
                 NopCustomerDefaults.SelectedShippingOptionAttribute, store.Id);
-            if (selectedShippingOption != null)
+
+            static bool ShippingOptionNamesEqual(string a, string b) =>
+                !string.IsNullOrEmpty(a) && !string.IsNullOrEmpty(b) &&
+                string.Equals(a.Trim(), b.Trim(), StringComparison.InvariantCultureIgnoreCase);
+
+            CheckoutShippingMethodModel.ShippingMethodModel shippingOptionToSelect = null;
+
+            if (selectedShippingOption != null && !string.IsNullOrWhiteSpace(selectedShippingOption.Name))
             {
-                var shippingOptionToSelect = model.ShippingMethods.ToList()
-                    .Find(so =>
-                        !string.IsNullOrEmpty(so.Name) &&
-                        so.Name.Equals(selectedShippingOption.Name, StringComparison.InvariantCultureIgnoreCase) &&
-                        !string.IsNullOrEmpty(so.ShippingRateComputationMethodSystemName) &&
-                        so.ShippingRateComputationMethodSystemName.Equals(selectedShippingOption.ShippingRateComputationMethodSystemName, StringComparison.InvariantCultureIgnoreCase));
-                if (shippingOptionToSelect != null) 
+                var savedName = selectedShippingOption.Name.Trim();
+                var savedSys = selectedShippingOption.ShippingRateComputationMethodSystemName?.Trim();
+
+                shippingOptionToSelect = model.ShippingMethods.FirstOrDefault(so =>
+                    ShippingOptionNamesEqual(so.Name, savedName) &&
+                    !string.IsNullOrEmpty(savedSys) &&
+                    !string.IsNullOrEmpty(so.ShippingRateComputationMethodSystemName) &&
+                    string.Equals(so.ShippingRateComputationMethodSystemName, savedSys, StringComparison.OrdinalIgnoreCase));
+
+                if (shippingOptionToSelect == null)
+                {
+                    var sameName = model.ShippingMethods.Where(so => ShippingOptionNamesEqual(so.Name, savedName)).ToList();
+                    if (sameName.Count == 1)
+                        shippingOptionToSelect = sameName[0];
+                }
+
+                // Same provider returned multiple lines (e.g. door vs PUDO locker); disambiguate from saved name
+                if (shippingOptionToSelect == null && !string.IsNullOrEmpty(savedSys))
+                {
+                    var sameProvider = model.ShippingMethods
+                        .Where(so => !string.IsNullOrEmpty(so.ShippingRateComputationMethodSystemName) &&
+                            string.Equals(so.ShippingRateComputationMethodSystemName, savedSys, StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                    if (sameProvider.Count > 1)
+                    {
+                        if (savedName.Contains("pudo", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var pudoOnly = sameProvider.Where(so =>
+                                so.Name != null && so.Name.Contains("pudo", StringComparison.OrdinalIgnoreCase)).ToList();
+                            if (pudoOnly.Count == 1)
+                                shippingOptionToSelect = pudoOnly[0];
+                        }
+                        else
+                        {
+                            var nonPudo = sameProvider.Where(so =>
+                                so.Name == null || !so.Name.Contains("pudo", StringComparison.OrdinalIgnoreCase)).ToList();
+                            if (nonPudo.Count == 1)
+                                shippingOptionToSelect = nonPudo[0];
+                        }
+                    }
+                }
+
+                if (shippingOptionToSelect != null)
                     shippingOptionToSelect.Selected = true;
             }
             //if no option has been selected, let's do it for the first one
             if (model.ShippingMethods.FirstOrDefault(so => so.Selected) == null)
             {
-                var shippingOptionToSelect = model.ShippingMethods.FirstOrDefault();
-                if (shippingOptionToSelect != null) 
-                    shippingOptionToSelect.Selected = true;
+                var firstMethod = model.ShippingMethods.FirstOrDefault();
+                if (firstMethod != null)
+                    firstMethod.Selected = true;
             }
 
             //notify about shipping from multiple locations
