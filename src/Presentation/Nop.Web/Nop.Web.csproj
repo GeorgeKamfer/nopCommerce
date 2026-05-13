@@ -50,7 +50,8 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
     <PackageReference Include="Azure.Core" Version="1.44.1" />
-    <PackageReference Include="System.ClientModel" Version="1.1.0" />
+    <!-- 1.2.1: satisfies Azure Vision SDK (AiServices) while staying on Azure.Core 1.44.x -->
+    <PackageReference Include="System.ClientModel" Version="1.2.1" />
 
     <None Update="Areas\Admin\sitemap.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
