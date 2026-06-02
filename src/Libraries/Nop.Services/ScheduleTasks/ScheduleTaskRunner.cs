@@ -72,6 +72,13 @@ public partial class ScheduleTaskRunner : IScheduleTaskRunner
         //update appropriate datetime properties
         await _scheduleTaskService.UpdateTaskAsync(scheduleTask);
         await task.ExecuteAsync();
+
+        // Tasks may change Enabled during execution (e.g. self-disable when work is complete).
+        // Re-read from DB so the post-run save does not overwrite those changes.
+        var current = await _scheduleTaskService.GetTaskByIdAsync(scheduleTask.Id);
+        if (current != null)
+            scheduleTask.Enabled = current.Enabled;
+
         scheduleTask.LastEndUtc = scheduleTask.LastSuccessUtc = DateTime.UtcNow;
         //update appropriate datetime properties
         await _scheduleTaskService.UpdateTaskAsync(scheduleTask);
